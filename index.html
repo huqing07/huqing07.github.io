@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Huqing07.GitHub.io : ">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Huqing07.GitHub.io</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/huqing07">View on GitHub</a>
+
+          <h1 id="project_title">Huqing07.GitHub.io</h1>
+          <h2 id="project_tagline"></h2>
+
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <hr>
+
+<p>title: "Practical Machine Learning Project"
+author: "Qing"
+date: "March 21, 2015"</p>
+
+<h2>
+<a id="output-html_document" class="anchor" href="#output-html_document" aria-hidden="true"><span class="octicon octicon-link"></span></a>output: html_document</h2>
+
+<h2>
+<a id="introduction" class="anchor" href="#introduction" aria-hidden="true"><span class="octicon octicon-link"></span></a>Introduction</h2>
+
+<p>A predictive model has been built by using machine learning algorithm on Weight Lifting Exercises (WLE) dataset (source: <a href="http://groupware.les.inf.puc-rio.br/har">http://groupware.les.inf.puc-rio.br/har</a>). The WLE training dataset has 19622 observations and 160 variables. They are the data from accelerometers on the belt, forearm, arm, and dumbell of six young health participants. The participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different ways: exactly according to the specification (A), throwing the elbows to the front (B), lifting the dumbbell only halfway (C), lowering the dumbbell only halfway (D) and throwing the hips to the front (E). The objective of this project is to predict the manner ("classe" variable in the dataset) in which they did the exercise and apply the model to a 20-observation test dataset.</p>
+
+<h2>
+<a id="load-the-datasets" class="anchor" href="#load-the-datasets" aria-hidden="true"><span class="octicon octicon-link"></span></a>Load the datasets</h2>
+
+<div class="highlight highlight-r"><pre><span class="pl-smi">train</span> <span class="pl-k">&lt;-</span> read.csv(<span class="pl-s"><span class="pl-pds">'</span>~/Desktop/pml-training.csv<span class="pl-pds">'</span></span>, <span class="pl-v">header</span> <span class="pl-k">=</span> <span class="pl-c1">TRUE</span>)
+<span class="pl-smi">test</span> <span class="pl-k">&lt;-</span> read.csv(<span class="pl-s"><span class="pl-pds">'</span>~/Desktop/pml-testing.csv<span class="pl-pds">'</span></span>, <span class="pl-v">header</span> <span class="pl-k">=</span> <span class="pl-c1">TRUE</span>)</pre></div>
+
+<h2>
+<a id="build-a-predictive-model-using-a-machine-learning-algorithm---gbm" class="anchor" href="#build-a-predictive-model-using-a-machine-learning-algorithm---gbm" aria-hidden="true"><span class="octicon octicon-link"></span></a>Build a predictive model using a machine learning algorithm - gbm</h2>
+
+<p>Here gradient boosting machine (gbm) is selected for predicting "classe". This is because gbm inherits all the good featuress of trees: 1) can easily ignore redundant variabls; 2) can handle mixed predictors (quantitative and qualitative); 3) can handle missing data elegantly through surrogate splits. In addition, it also improves on the weak features via slowly growing small trees and typically leads to better performance.</p>
+
+<p>5-fold cross validation is used to select the best number of trees. From the deviance plot we can see cross validation error (green curve) is very close to training error (black curve). As a result, we may expect the out of sample error to be close to the cross validation error. The model accuracy on the whole training dataset is 99.5%.</p>
+
+<div class="highlight highlight-r"><pre>library(<span class="pl-smi">gbm</span>)
+<span class="pl-smi">train.1</span> <span class="pl-k">&lt;-</span> <span class="pl-smi">train</span>[<span class="pl-k">-</span>c(<span class="pl-c1">1</span>, <span class="pl-c1">3</span>, <span class="pl-c1">4</span>, <span class="pl-c1">5</span>)] <span class="pl-c">##remove the obs index and timestamp variables</span>
+
+<span class="pl-smi">modgbm</span> <span class="pl-k">&lt;-</span> gbm(<span class="pl-smi">classe</span><span class="pl-k">~</span>., 
+              <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">train.1</span>,
+              <span class="pl-v">cv.folds</span> <span class="pl-k">=</span> <span class="pl-c1">5</span>,
+              <span class="pl-v">distribution</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>multinomial<span class="pl-pds">'</span></span>,
+              <span class="pl-v">interaction.depth</span> <span class="pl-k">=</span> <span class="pl-c1">3</span>,
+              <span class="pl-v">shrinkage</span> <span class="pl-k">=</span> .<span class="pl-c1">1</span>,
+              <span class="pl-v">n.trees</span> <span class="pl-k">=</span> <span class="pl-c1">150</span>,
+              <span class="pl-v">bag.fraction</span> <span class="pl-k">=</span> <span class="pl-c1">1</span>,
+              <span class="pl-v">train.fraction</span> <span class="pl-k">=</span> <span class="pl-c1">1</span>)
+
+gbm.perf(<span class="pl-smi">modgbm</span>, <span class="pl-v">method</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>cv<span class="pl-pds">'</span></span>)
+
+<span class="pl-smi">pred.train</span> <span class="pl-k">&lt;-</span> predict(<span class="pl-smi">modgbm</span>, <span class="pl-smi">train.1</span>, <span class="pl-v">type</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>response<span class="pl-pds">'</span></span>)
+<span class="pl-smi">pred.train.cat</span><span class="pl-k">&lt;-</span><span class="pl-c1">NULL</span>
+<span class="pl-k">for</span> (<span class="pl-smi">i</span> <span class="pl-k">in</span> <span class="pl-c1">1</span><span class="pl-k">:</span>nrow(<span class="pl-smi">train.1</span>)){
+    <span class="pl-smi">pred.train.cat</span>[<span class="pl-smi">i</span>] <span class="pl-k">&lt;-</span> <span class="pl-c1">LETTERS</span>[which(<span class="pl-smi">pred.train</span>[<span class="pl-smi">i</span>, , <span class="pl-c1">1</span>] <span class="pl-k">==</span> max(<span class="pl-smi">pred.train</span>[<span class="pl-smi">i</span>, , <span class="pl-c1">1</span>]))]
+}
+<span class="pl-smi">accuracy</span> <span class="pl-k">&lt;-</span> mean(<span class="pl-smi">pred.train.cat</span> <span class="pl-k">==</span> <span class="pl-smi">train.1</span><span class="pl-k">$</span><span class="pl-smi">classe</span>)
+<span class="pl-smi">accuracy</span></pre></div>
+
+<h2>
+<a id="predict-classe-on-test-dataset" class="anchor" href="#predict-classe-on-test-dataset" aria-hidden="true"><span class="octicon octicon-link"></span></a>Predict "classe" on test dataset</h2>
+
+<p>Apply the gbm model to predict the 20-observation test dataset. </p>
+
+<div class="highlight highlight-r"><pre><span class="pl-smi">new.test</span> <span class="pl-k">&lt;-</span> rbind(<span class="pl-smi">train</span>[<span class="pl-c1">1</span>, <span class="pl-k">-</span><span class="pl-c1">160</span>], <span class="pl-smi">test</span>[<span class="pl-k">-</span><span class="pl-c1">160</span>]) 
+<span class="pl-smi">new.test.1</span> <span class="pl-k">&lt;-</span> <span class="pl-smi">new.test</span>[<span class="pl-k">-</span>c(<span class="pl-c1">1</span>, <span class="pl-c1">3</span>, <span class="pl-c1">4</span>, <span class="pl-c1">5</span>)]
+
+<span class="pl-smi">pred.test</span> <span class="pl-k">&lt;-</span> predict(<span class="pl-smi">modgbm</span>, <span class="pl-smi">new.test.1</span>, <span class="pl-v">n.trees</span> <span class="pl-k">=</span> <span class="pl-c1">150</span>, <span class="pl-v">type</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>response<span class="pl-pds">'</span></span>)
+
+<span class="pl-smi">pred.test.cat</span><span class="pl-k">&lt;-</span><span class="pl-c1">NULL</span>
+<span class="pl-k">for</span> (<span class="pl-smi">i</span> <span class="pl-k">in</span> <span class="pl-c1">1</span><span class="pl-k">:</span><span class="pl-c1">21</span>){
+<span class="pl-smi">pred.test.cat</span>[<span class="pl-smi">i</span>] <span class="pl-k">&lt;-</span> <span class="pl-c1">LETTERS</span>[which(<span class="pl-smi">pred.test</span>[<span class="pl-smi">i</span>, , <span class="pl-c1">1</span>] <span class="pl-k">==</span> max(<span class="pl-smi">pred.test</span>[<span class="pl-smi">i</span>, , <span class="pl-c1">1</span>]))]
+}
+<span class="pl-smi">pred.test.cat.1</span> <span class="pl-k">&lt;-</span> <span class="pl-smi">pred.test.cat</span>[<span class="pl-c1">2</span><span class="pl-k">:</span><span class="pl-c1">21</span>]
+
+<span class="pl-v">pml_write_files</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(<span class="pl-smi">x</span>){
+    <span class="pl-v">n</span> <span class="pl-k">=</span> length(<span class="pl-smi">x</span>)
+    <span class="pl-k">for</span>(<span class="pl-smi">i</span> <span class="pl-k">in</span> <span class="pl-c1">1</span><span class="pl-k">:</span><span class="pl-smi">n</span>){
+        <span class="pl-v">filename</span> <span class="pl-k">=</span> paste0(<span class="pl-s"><span class="pl-pds">"</span>problem_id_<span class="pl-pds">"</span></span>,<span class="pl-smi">i</span>,<span class="pl-s"><span class="pl-pds">"</span>.txt<span class="pl-pds">"</span></span>)
+        write.table(<span class="pl-smi">x</span>[<span class="pl-smi">i</span>],<span class="pl-v">file</span><span class="pl-k">=</span><span class="pl-smi">filename</span>,<span class="pl-v">quote</span><span class="pl-k">=</span><span class="pl-c1">FALSE</span>,<span class="pl-v">row.names</span><span class="pl-k">=</span><span class="pl-c1">FALSE</span>,<span class="pl-v">col.names</span><span class="pl-k">=</span><span class="pl-c1">FALSE</span>)
+    }
+}
+pml_write_files(<span class="pl-smi">pred.test.cat.1</span>)</pre></div>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
